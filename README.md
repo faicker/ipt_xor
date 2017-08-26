@@ -1,7 +1,7 @@
 iptables xor module
 ===================
 The XOR target enables the user to encrypt TCP and UDP traffic using a very simple xor encryption.  
-warning: This is not real encryption.
+**warning:** This is not a real encryption.
 
 
 ## Install
@@ -15,15 +15,16 @@ cp libxt_XOR.so /lib64/xtables/
 ```bash
 cd kernel;make
 insmod xt_XOR.ko
+```
 
 ## Usage
 
 XOR takes one mandatory parameter.  
---key key-value where key-value is a byte used to xor with packet payloads.
+`--key key-value` where key-value is a byte used to xor with packet payloads.
 
 ## Example
 
-to use this target between hosts 1.2.3.4 and 1.2.3.5.
+To use this target between hosts 1.2.3.4 and 1.2.3.5.
 
 ### (on host A, 1.2.3.4)
 ```bash

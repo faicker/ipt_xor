@@ -1,6 +1,7 @@
 iptables xor module
 ===================
 The XOR target enables the user to encrypt TCP and UDP traffic using a very simple xor encryption.  
+[Xor](https://en.wikipedia.org/wiki/XOR_cipher) is its own inverse. That is, to undo xor, the same algorithm is applied, so the same action can be used for encoding and decoding.  
 **warning:** This is not a real encryption.
 
 

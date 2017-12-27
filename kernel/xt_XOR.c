@@ -1,3 +1,4 @@
+#include <linux/version.h>
 #include <linux/module.h>
 #include <linux/skbuff.h>
 #include <linux/ip.h>
@@ -37,8 +38,13 @@ static inline void transform(char *buffer, uint32_t len, unsigned char key)
     }
 }
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,7,0)
+    static unsigned int
+xt_xor_target(struct sk_buff *skb, const struct xt_action_param *par)
+#else
     static unsigned int
 xt_xor_target(struct sk_buff *skb, const struct xt_target_param *par)
+#endif
 {
     const struct xt_xor_info *info = par->targinfo;
     struct iphdr *iph;
@@ -89,6 +95,18 @@ xt_xor_target(struct sk_buff *skb, const struct xt_target_param *par)
     return XT_CONTINUE;
 }
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,35)
+static int xt_xor_checkentry(const struct xt_tgchk_param *par)
+{
+    if (strcmp(par->table, "mangle")) {
+        printk(KERN_WARNING "XOR: can only be called from"
+                "\"mangle\" table, not \"%s\"\n", par->table);
+        return -EINVAL;
+    }
+
+    return 0;
+}
+#else
 static bool xt_xor_checkentry(const struct xt_tgchk_param *par)
 {
     if (strcmp(par->table, "mangle")) {
@@ -99,6 +117,7 @@ static bool xt_xor_checkentry(const struct xt_tgchk_param *par)
 
     return true;
 }
+#endif
 
 static struct xt_target xt_xor = {
     .name = "XOR",

@@ -40,8 +40,8 @@ iptables −t mangle −A INPUT −s 1.2.3.4 -p tcp --dport 1234 −j XOR −−
 ```
 
 ### Notice
-
-* Tested on Centos6.5(2.6.32-431.23.3.el6.x86_64).
+* Support kernel version >= 2.6.32.
+* Tested on Centos6.5(2.6.32-431.23.3.el6.x86_64), centos7.2(3.10.0-327.22.2.el7.x86_64) and kernel 4.1.0.
 
 ### License
 

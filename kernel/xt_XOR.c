@@ -54,7 +54,11 @@ xt_xor_target(struct sk_buff *skb, const struct xt_target_param *par)
     int data_len, tcplen, udplen;
 
     iph = ip_hdr(skb);
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,3,0)
+    if (unlikely(skb_ensure_writable(skb, ntohs(iph->tot_len))))
+#else
     if (unlikely(!skb_make_writable(skb, ntohs(iph->tot_len))))
+#endif
         return NF_DROP;
 
     iph = ip_hdr(skb);

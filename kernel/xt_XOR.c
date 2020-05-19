@@ -16,26 +16,29 @@ MODULE_DESCRIPTION("iptables XOR module");
 MODULE_LICENSE("GPL");
 MODULE_ALIAS("ipt_XOR");
 
-static inline void transform(char *buffer, uint32_t len, unsigned char key)
+static inline void transform_k(char *buffer, uint32_t len, unsigned char key)
 {
-    unsigned j;
-    unsigned long *p = (unsigned long *)buffer;
-    unsigned long kl = 0;
-    const unsigned long_size = sizeof(unsigned long);
-    for ( j = 0;j < long_size;j++ ) {
-        kl = (kl << 8) + key;
+    unsigned i;
+    for (i = 0;i < len;i++) {
+        buffer[i] ^= key;
     }
-    while ( len > long_size ) {
-        *p ^= kl;
-        p++;
-        len -= long_size;
+}
+
+static inline void transform_ks(char *buffer, uint32_t len, const char* keys)
+{
+    unsigned key_len = strlen(keys);
+    unsigned i;
+    for (i = 0;i < len;i++) {
+        buffer[i] ^= keys[i % key_len];
     }
-    buffer = (char *)p;
-    while ( len > 0 ) {
-        *buffer ^= key;
-        buffer++;
-        len -= 1;
-    }
+}
+
+static inline void transform(char *buffer, uint32_t len, const struct xt_xor_info *info)
+{
+    if (info->keys[0] > 0)
+        transform_ks(buffer, len, info->keys);
+    else
+        transform_k(buffer, len, info->key);
 }
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,7,0)
@@ -73,7 +76,7 @@ xt_xor_target(struct sk_buff *skb, const struct xt_target_param *par)
         if (unlikely(data_len < 0)) {
             return NF_DROP;
         }
-        transform(buf_pos, data_len, info->key);
+        transform(buf_pos, data_len, info);
         if (skb->ip_summed != CHECKSUM_PARTIAL) {
             tcph->check = 0;
             tcph->check = csum_tcpudp_magic(iph->saddr, iph->daddr,
@@ -88,7 +91,7 @@ xt_xor_target(struct sk_buff *skb, const struct xt_target_param *par)
         if (unlikely(data_len < 0)) {
             return NF_DROP;
         }
-        transform(buf_pos, data_len, info->key);
+        transform(buf_pos, data_len, info);
         if (skb->ip_summed != CHECKSUM_PARTIAL) {
             udph->check = 0;
             udph->check = csum_tcpudp_magic(iph->saddr, iph->daddr,

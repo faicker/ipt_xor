@@ -10,7 +10,7 @@ The XOR target enables the user to encrypt TCP and UDP traffic using a very simp
 2. To compile the userpace so,
 ```bash
 cd userspace;make libxt_XOR.so
-cp libxt_XOR.so /lib64/xtables/
+cp libxt_XOR.so /lib64/xtables/  # debian/ubuntu is /usr/lib/x86_64-linux-gnu/xtables/
 ```
 3. To compile the kernel module,
 ```bash
@@ -21,7 +21,10 @@ insmod xt_XOR.ko
 ## Usage
 
 XOR takes one mandatory parameter.  
+
 `--key key-value` where key-value is a byte used to xor with packet payloads.
+
+`--keys '1234'` where 1234 is a string. Warning, don't use this with tcp because tcp is a stream.
 
 ## Example
 
@@ -42,6 +45,7 @@ iptables −t mangle −A INPUT −s 1.2.3.4 -p tcp --dport 1234 −j XOR −−
 ### Notice
 * Support kernel version >= 2.6.32.
 * Tested on Centos6.5(2.6.32-431.23.3.el6.x86_64), centos7.2(3.10.0-327.22.2.el7.x86_64) and kernel 4.1.0.
+* Tested on Ubuntu18.04(4.15.0-101-generic) and Ubuntu 20.04(5.4.0-29-generic)
 
 ### License
 

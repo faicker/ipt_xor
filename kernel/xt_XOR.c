@@ -5,6 +5,7 @@
 #include <linux/tcp.h>
 #include <linux/udp.h>
 #include <net/tcp.h>
+#include <net/gre.h>
 #include <net/checksum.h>
 
 #include <linux/netfilter_ipv4/ip_tables.h>
@@ -53,8 +54,9 @@ xt_xor_target(struct sk_buff *skb, const struct xt_target_param *par)
     struct iphdr *iph;
     struct tcphdr *tcph = NULL;
     struct udphdr *udph = NULL;
+    struct gre_base_hdr *greh = NULL;
     unsigned char *buf_pos;
-    int data_len, tcplen, udplen;
+    int ip_payload_len, data_len;
 
     iph = ip_hdr(skb);
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5,3,0)
@@ -67,12 +69,12 @@ xt_xor_target(struct sk_buff *skb, const struct xt_target_param *par)
     iph = ip_hdr(skb);
     buf_pos = skb->data;
     buf_pos += iph->ihl*4;
+    ip_payload_len =  skb->len - iph->ihl*4;
     
     if (iph->protocol == IPPROTO_TCP) {
         tcph = (struct tcphdr *)buf_pos;
         buf_pos += tcph->doff*4;
-        tcplen = skb->len - iph->ihl*4;
-        data_len =  tcplen - tcph->doff*4;
+        data_len =  ip_payload_len - tcph->doff*4;
         if (unlikely(data_len < 0)) {
             return NF_DROP;
         }
@@ -80,14 +82,13 @@ xt_xor_target(struct sk_buff *skb, const struct xt_target_param *par)
         if (skb->ip_summed != CHECKSUM_PARTIAL) {
             tcph->check = 0;
             tcph->check = csum_tcpudp_magic(iph->saddr, iph->daddr,
-                                       tcplen, IPPROTO_TCP,
-                                       csum_partial((char *)tcph, tcplen, 0));
+                                       ip_payload_len, IPPROTO_TCP,
+                                       csum_partial((char *)tcph, ip_payload_len, 0));
         }
     } else if (iph->protocol == IPPROTO_UDP) {
         udph = (struct udphdr *)buf_pos;
         buf_pos += sizeof(struct udphdr);
-        udplen = skb->len - iph->ihl*4;
-        data_len = udplen - sizeof(struct udphdr);
+        data_len = ip_payload_len - sizeof(struct udphdr);
         if (unlikely(data_len < 0)) {
             return NF_DROP;
         }
@@ -95,8 +96,18 @@ xt_xor_target(struct sk_buff *skb, const struct xt_target_param *par)
         if (skb->ip_summed != CHECKSUM_PARTIAL) {
             udph->check = 0;
             udph->check = csum_tcpudp_magic(iph->saddr, iph->daddr,
-                                       udplen, IPPROTO_UDP,
-                                       csum_partial((char *)udph, udplen, 0));
+                                       ip_payload_len, IPPROTO_UDP,
+                                       csum_partial((char *)udph, ip_payload_len, 0));
+        }
+    } else if (iph->protocol == IPPROTO_GRE) {
+        greh = (struct gre_base_hdr *)buf_pos;
+        if (greh->flags == 0 && greh->protocol == htons(ETH_P_IP)) {
+            buf_pos += sizeof(struct gre_base_hdr);
+            data_len = ip_payload_len - sizeof(struct gre_base_hdr);
+            if (unlikely(data_len < 0)) {
+                return NF_DROP;
+            }
+            transform(buf_pos, data_len, info);
         }
     }
     return XT_CONTINUE;

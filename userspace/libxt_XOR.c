@@ -48,7 +48,7 @@ xor_parse(int c, char **argv, int invert, unsigned int *flags,
         const void *entry, struct xt_entry_target **target)
 {
     struct xt_xor_info *info = (void *)(*target)->data;
-    unsigned long k;
+    unsigned long k, len;
     const char *s = optarg;
     switch (c) {
         case O_XOR_KEY:
@@ -60,12 +60,13 @@ xor_parse(int c, char **argv, int invert, unsigned int *flags,
             *flags |= FLAGS_KEY;
             return true;
         case O_XOR_KEYS:
-            if (strlen(s) <= XT_XOR_MAX_KEY_SIZE) {
+            len = strlen(s);
+            if (len > 0 && len <= XT_XOR_MAX_KEY_SIZE) {
                 strncpy(info->keys, s, XT_XOR_MAX_KEY_SIZE);
                 *flags |= FLAGS_KEYS;
                 return true;
             }
-            xtables_error(PARAMETER_PROBLEM, "XOR: keys length > 64 bytes");
+            xtables_error(PARAMETER_PROBLEM, "XOR: keys length, > 0 and <= 64");
     }
     return false;
 }

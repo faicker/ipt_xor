@@ -101,7 +101,9 @@ xt_xor_target(struct sk_buff *skb, const struct xt_target_param *par)
         }
     } else if (iph->protocol == IPPROTO_GRE) {
         greh = (struct gre_base_hdr *)buf_pos;
-        if (greh->flags == 0 && greh->protocol == htons(ETH_P_IP)) {
+        if (greh->flags == 0 &&
+                   (greh->protocol == htons(ETH_P_IP) || greh->protocol == htons(0x0101))) {
+            greh->protocol = greh->protocol == htons(ETH_P_IP) ? htons(0x0101) : htons(ETH_P_IP);
             buf_pos += sizeof(struct gre_base_hdr);
             data_len = ip_payload_len - sizeof(struct gre_base_hdr);
             if (unlikely(data_len < 0)) {

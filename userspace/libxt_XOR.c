@@ -116,7 +116,7 @@ static struct xtables_target xor_reg[] = {
     },
 };
 
-static void _init(void)
+static __attribute__((constructor)) void init_xt_xor(void)
 {
     xtables_register_targets(xor_reg,
             sizeof(xor_reg) / sizeof(*xor_reg));
